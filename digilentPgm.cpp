@@ -3,7 +3,7 @@
 #include <QTime>
 #include <QFile>
 
-#include "lib/digilent/qtSerial/serial.h"
+#include "../qtSerial/serial.h"
 
 QString DigilentPgm::argHexFile = QString();
 QString DigilentPgm::argComPort = QString();

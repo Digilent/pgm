@@ -6,8 +6,8 @@
 #include <QSerialPortInfo>
 #include <QString>
 
-#include "lib/digilent/qtSerial/serial.h"
-#include "src/pgmBlock.h"
+#include "pgmBlock.h"
+#include "../qtSerial/serial.h"
 
 class DigilentPgm
 {

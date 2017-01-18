@@ -3,7 +3,6 @@
 
 #include <QByteArray>
 
-
 class PgmBlock
 {
 public:
