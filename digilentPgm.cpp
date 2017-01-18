@@ -88,7 +88,7 @@ bool DigilentPgm::checkInputParameters(QVector<QString> parameters) {
         return true;
     }
     else {
-        qStdOut() << "Invalid number of parameters: 2 parameters are required but" << parameters.size() << "parameters were provided." << endl;
+        qStdOut() << "Invalid number of parameters: 2 parameters are required but " << parameters.size() << " parameters were provided." << endl;
         return false;
     }
 }
