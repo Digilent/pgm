@@ -23,76 +23,50 @@ int  DigilentPgm::capabilities          = 0;
 int  DigilentPgm::flashRowSize          = 0;
 int  DigilentPgm::flashPageSize         = 0;
 
-DigilentPgm::DigilentPgm(QVector<QString> args)
+DigilentPgm::DigilentPgm()
 {
-    QVector<PgmBlock> hexList;
-    qStdOut() << "\nDigilentPGM v2.0.0" << endl;
-    qStdOut() << "Digilent Copyright 2017" << endl;
-    qStdOut() << "Written by Keith Vogel" << endl;
-    qStdOut() << "Contributions from: Sam Kristoff" << endl;
 
-    QDateTime now = QDateTime::currentDateTime();
-    qStdOut() << now.toString("dddd, MMMM, dd, yyyy, h:mm:ss AP t") << "\n\n" << endl;
-
-    //Initialize variables
-    this->seqNbrSend = 0;
-
-    //Check parameters
-    if(!checkInputParameters(args))
-    {
-        throw 1;
-    }
-
-    //Find serial port with specified board name
-    if(this->argBoardName != ""){
-        if(!findSerialPort(this->argBoardName))
-        {
-            qStdOut() << "Can't find board: " << argBoardName << endl;
-            throw 2;
-        }
-    }
-    else
-    {
-        //TODO - config serial ports...
-    }
-
-    //Process hex list
-    hexList = processHexFile(argHexFile, this->pgmBlkSize, 0xFF);
-    if(hexList.length() <= 0) {
-        qStdOut() << "Unable to process Hex File" << endl;
-    } else {
-        if(!stk500v2Pgm(hexList)) {
-            qStdOut() << "Unable to program Hex File" << endl;
-        }
-    }
-
-    this->port.close();
-
-    qDebug("End of program");
 }
 
-//Check the input parameters - This function ensures the correct number of parameters have been provided and stores values in appropriate member variables.
-bool DigilentPgm::checkInputParameters(QVector<QString> parameters) {
-    if(parameters.size() > 1)
+bool DigilentPgm::programByPort(QString hexPath, QString portName){
+    if(this->port.open(portName, 115200))
     {
-        this->argHexFile = parameters[0];
-    }
-    if(parameters.size() == 2)
-    {
-        this->argComPort = parameters[1];
-        return true;
-    }
-    else if (parameters.size() == 3 && parameters[1] == "BoardName")
-    {
-        argBoardName = parameters[2];
-        return true;
-    }
-    else {
-        qStdOut() << "Invalid number of parameters: 2 parameters are required but " << parameters.size() << " parameters were provided." << endl;
+        return programActivePort(hexPath);
+    } else {
         return false;
     }
 }
 
+bool DigilentPgm::programByBoardName(QString hexPath, QString boardName) {
+    //Find and open the port with the specified boardName attached
+    if(findSerialPort(boardName))
+    {
+        return programActivePort(hexPath);
+    } else {
+        qStdOut() << "Can't find board: " << argBoardName << endl;
+        return false;
+    }
+}
+
+bool DigilentPgm::programActivePort(QString hexPath) {
+    //Initialize variables
+    QVector<PgmBlock> hexList;
+    this->seqNbrSend = 0;
+
+    //Process hex list
+    hexList = processHexFile(hexPath, this->pgmBlkSize, 0xFF);
+    if(hexList.length() <= 0) {
+        qStdOut() << "Unable to process Hex File" << endl;
+        return false;
+    } else {
+        if(stk500v2Pgm(hexList)) {
+            return true;
+        } else {
+            qStdOut() << "Unable to program Hex File" << endl;
+            return false;
+        }
+    }
+}
 
 bool DigilentPgm::findSerialPort(QString strBoardName) {
     //Refresh the system port information

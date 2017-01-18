@@ -12,9 +12,13 @@
 class DigilentPgm
 {
 public:
-    DigilentPgm(QVector<QString> args);
+    DigilentPgm();
+    bool programByPort(QString hexPath, QString portName);
+    bool programByBoardName(QString hexPath, QString boardName);
+    bool checkInputParameters();
 
-    bool checkInputParameters(QVector<QString> parameters);
+private:    
+    bool programActivePort(QString hexPath);
     bool findSerialPort(QString strBoardName);
     QByteArray signOn();
     QByteArray createMsg(QByteArray body);
@@ -39,21 +43,19 @@ public:
     QByteArray readData(unsigned int cbRead);
     QByteArray leavePgm();
 
+    //Utilities
     QTextStream& qStdOut();
+    unsigned short byteArrayToUShort(QByteArray array);
+    unsigned int byteArrayToUInt(QByteArray array);
+    QString toHexString(unsigned int value);
 
-
-private:
-
+    //Variables
     static QString argHexFile;
     static QString argComPort;
     static QString argBoardName;
 
     QList<QSerialPortInfo> serialPortInfo;
     Serial port;
-
-    unsigned short byteArrayToUShort(QByteArray array);
-    unsigned int byteArrayToUInt(QByteArray array);
-    QString toHexString(unsigned int value);
 
     static const char PARAM_BUILD_NUMBER_LOW            = 0x80;
     static const char PARAM_BUILD_NUMBER_HIGH           = 0x81;
