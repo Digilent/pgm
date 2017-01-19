@@ -31,6 +31,13 @@ DigilentPgm::DigilentPgm()
 bool DigilentPgm::programByPort(QString hexPath, QString portName){
     if(this->port.open(portName, 115200))
     {
+        QByteArray resp = signOn();
+        if(resp != NULL && resp[1] == STATUS_CMD_OK)
+        {
+            if(!isDigilentBootloader()){
+                qStdOut() << "Bootloader only supports STK500v2" << endl;
+            }
+        }
         return programActivePort(hexPath);
     } else {
         return false;
