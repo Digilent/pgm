@@ -699,7 +699,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
 
                     resp = readData(pgmBlkSize);
                     if(resp != NULL && resp[1] == STATUS_CMD_OK) {
-                        if(hexList[i].data == resp.mid(2, pgmBlkSize+2)) {
+                        if(hexList[i].data == resp.mid(2, pgmBlkSize)) {
 
                             unsigned int prtBlock = iBlock %10;
                             qStdOut() << prtBlock << endl;
@@ -733,6 +733,9 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
             resp = leavePgm();
             fPass &= (resp != NULL && resp[1] == STATUS_CMD_OK);
         }
+    } else {
+        //Sign on failed
+        fPass = false;
     }
     return fPass;
 }

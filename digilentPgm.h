@@ -72,7 +72,7 @@ private:
     static const char  PARAM_DIGILENT_BLK_SIZE_HIGH     = 0xD1;
 
     static const char VEND_DIGILENT                     = 0x01;
-    static const int timeOutSTK500Read                  = 10000; // 10s, no less than 3.5s
+    static const int timeOutSTK500Read                  = 5000; // 5s, no less than 3.5s
 
     //stk500v2 constants
     static const char CMD_SIGN_ON                       = 0x01;
