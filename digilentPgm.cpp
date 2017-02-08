@@ -25,7 +25,7 @@ int  DigilentPgm::flashPageSize         = 0;
 
 DigilentPgm::DigilentPgm()
 {
-
+    this->progress = -1;
 }
 
 bool DigilentPgm::programByPort(QString hexPath, QString portName){
@@ -38,7 +38,10 @@ bool DigilentPgm::programByPort(QString hexPath, QString portName){
                 qStdOut() << "Bootloader only supports STK500v2" << endl;
             }
         }
-        return programActivePort(hexPath);
+        bool status = programActivePort(hexPath);
+        this->port.close();
+        return status;
+
     } else {
         return false;
     }
@@ -649,6 +652,9 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
             stopWatch.start();
 
             for(int i=0; i<hexList.length(); i++) {
+                //Update progress
+                this->progress = (i*100)/hexList.length();
+
                 if(curAddr != hexList[i].address) {
                     resp = loadAddress(hexList[i].address);
                     if(resp != NULL && resp[1] == STATUS_CMD_OK){
@@ -660,7 +666,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
                     }
                 }
                 resp = pgmData(hexList[i].data);
-                if(resp != NULL && resp[1] == STATUS_CMD_OK) {
+                if(resp != NULL && resp[1] == STATUS_CMD_OK) {                   
                     unsigned int prtBlock = iBlock %10;
                     qStdOut() << prtBlock;
 
@@ -743,7 +749,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
     } else {
         //Sign on failed
         fPass = false;
-    }
+    }   
     return fPass;
 }
 

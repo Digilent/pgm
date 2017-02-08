@@ -16,6 +16,7 @@ public:
     bool programByPort(QString hexPath, QString portName);
     bool programByBoardName(QString hexPath, QString boardName);
     bool checkInputParameters();
+    int progress;
 
 private:    
     bool programActivePort(QString hexPath);
