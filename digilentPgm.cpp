@@ -832,3 +832,7 @@ QTextStream& DigilentPgm::qStdOut()
     static QTextStream ts( stdout );
     return ts;
 }
+
+void DigilentPgm::releaseDevice() {
+    this->port.close();
+}
