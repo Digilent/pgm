@@ -23,6 +23,7 @@ int  DigilentPgm::capabilities          = 0;
 int  DigilentPgm::flashRowSize          = 0;
 int  DigilentPgm::flashPageSize         = 0;
 
+int DigilentPgm::progress = 0;
 DigilentPgm::DigilentPgm()
 {
     this->progress = -1;
@@ -32,7 +33,7 @@ bool DigilentPgm::programByPort(QString hexPath, QString portName){
     if(this->port.open(portName, 115200))
     {
         QByteArray resp = signOn();
-        if(resp != NULL && resp[1] == STATUS_CMD_OK)
+        if(!resp.isNull() && resp[1] == STATUS_CMD_OK)
         {
             if(!isDigilentBootloader()){
                 qStdOut() << "Bootloader only supports STK500v2" << endl;
@@ -92,14 +93,14 @@ bool DigilentPgm::findSerialPort(QString strBoardName) {
             this->port.assertReset();
             //Sign on
             QByteArray resp = signOn();
-            if(resp != NULL && resp[1] == STATUS_CMD_OK)
+            if(!resp.isNull() && resp[1] == STATUS_CMD_OK)
             {
                 //Check hardware version
                 QByteArray hwVer = getParam(PARAM_HW_VER);
-                if(hwVer != NULL && hwVer[1] == STATUS_CMD_OK && hwVer[2] == VEND_DIGILENT) {
+                if(!hwVer.isNull() && hwVer[1] == STATUS_CMD_OK && hwVer[2] == VEND_DIGILENT) {
                     //Check software version
                     QByteArray swVer = getParam(PARAM_SW_MAJOR);
-                    if(swVer != NULL && resp[1] == STATUS_CMD_OK && resp[2] >= 2){
+                    if(!swVer.isNull() && resp[1] == STATUS_CMD_OK && (unsigned char)resp[2] >= 2){
                         //Check board name
                         QString boardName = getBoardName();
                         if(boardName == strBoardName){
@@ -173,7 +174,7 @@ QByteArray DigilentPgm::createMsg(QByteArray body){
 
 bool DigilentPgm::sendMessage(QByteArray body) {
     QByteArray msg = createMsg(body);
-    if(msg == NULL){
+    if(msg.isNull()){
         return false;
     }
     return this->port.write(msg);
@@ -255,7 +256,7 @@ QString DigilentPgm::getBoardName() {
     }
 
     QByteArray resp = waitForResponse();
-    if(resp != NULL && resp[1] == STATUS_CMD_OK) {
+    if(!resp.isNull() && resp[1] == STATUS_CMD_OK) {
         //Trim 2 header bytes and 2 footer bytes (cmd, status | null, checksum)
         QString boardName = QString(resp.mid(2, body.length()-4));
         return boardName;
@@ -267,10 +268,10 @@ QString DigilentPgm::getBoardName() {
 bool DigilentPgm::isDigilentBootloader() {
     //Check hardware version
     QByteArray hwVer = getParam(PARAM_HW_VER);
-    if(hwVer != NULL && hwVer[1] == STATUS_CMD_OK && hwVer[2] == VEND_DIGILENT) {
+    if(!hwVer.isNull() && hwVer[1] == STATUS_CMD_OK && hwVer[2] == VEND_DIGILENT) {
         //Check software version
         QByteArray swVer = getParam(PARAM_SW_MAJOR);
-        if(swVer != NULL && swVer[1] == STATUS_CMD_OK && swVer[2] >= 2){
+        if(!swVer.isNull() && swVer[1] == STATUS_CMD_OK && (unsigned char)swVer[2] >= 2){
             //Check bootloader and board name
             QString boardName = getBoardName();
             if(boardName != NULL && getBootloaderInfo()) {
@@ -326,7 +327,7 @@ bool DigilentPgm::isDigilentBootloader() {
 
                 //Change to the new baud
                 QByteArray resp = this->setBaudRate(uartBaud);
-                if(resp != NULL && resp[1] == STATUS_CMD_OK){
+                if(!resp.isNull() && resp[1] == STATUS_CMD_OK){
                     if(uartBaud != this->port.getBaudRate()) {
                         if(!this->port.setBaudRate(uartBaud)){
                             uartBaud = curBaud;
@@ -363,7 +364,7 @@ bool DigilentPgm::getBootloaderInfo() {
     }
 
     QByteArray resp = waitForResponse();
-    if(resp != NULL && resp[1] == STATUS_CMD_OK && resp.length() >= 24) {
+    if(!resp.isNull() && resp[1] == STATUS_CMD_OK && resp.length() >= 24) {
         vendorID            = byteArrayToUShort(resp.mid(2, 2));
         prodID              = byteArrayToUInt(resp.mid(4, 4));
         devID               = byteArrayToUInt(resp.mid(8, 4));
@@ -385,7 +386,7 @@ QVector<int> DigilentPgm::getBaudRates() {
     }
 
     QByteArray resp = waitForResponse();
-    if(resp != NULL && resp[1] == STATUS_CMD_OK){
+    if(!resp.isNull() && resp[1] == STATUS_CMD_OK){
         int cBaud = byteArrayToUShort(resp.mid(2, 2));
         QVector<int> baud(cBaud);
 
@@ -641,9 +642,9 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
     bool fPass = true;
 
     resp = signOn();
-    if(resp != NULL && resp[1] == STATUS_CMD_OK){
+    if(!resp.isNull() && resp[1] == STATUS_CMD_OK){
         resp = enterPgm();
-        if(resp != NULL && resp[1] == STATUS_CMD_OK) {
+        if(!resp.isNull() && resp[1] == STATUS_CMD_OK) {
             unsigned int curAddr = 0;
             unsigned int iBlock = 0;
             QTime stopWatch;
@@ -653,11 +654,17 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
 
             for(int i=0; i<hexList.length(); i++) {
                 //Update progress
+                int hll = hexList.length();
                 this->progress = (i*100)/hexList.length();
+                qDebug() << "PROGRESS: " << i << " of " << hexList.length() << "=" << this->progress;
+
+                if(this->progress > 100 || this->progress < 0) {
+                    qDebug () << "goofy progress value";
+                }
 
                 if(curAddr != hexList[i].address) {
                     resp = loadAddress(hexList[i].address);
-                    if(resp != NULL && resp[1] == STATUS_CMD_OK){
+                    if(!resp.isNull() && resp[1] == STATUS_CMD_OK){
                         curAddr = hexList[i].address;
                     } else {
                         qStdOut() << "Failed to load program address at:" << toHexString(hexList[i].address) << endl;
@@ -666,7 +673,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
                     }
                 }
                 resp = pgmData(hexList[i].data);
-                if(resp != NULL && resp[1] == STATUS_CMD_OK) {                   
+                if(!resp.isNull() && resp[1] == STATUS_CMD_OK) {
                     unsigned int prtBlock = iBlock %10;
                     qStdOut() << prtBlock;
 
@@ -701,7 +708,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
                 for(int i=0; i<hexList.length(); i++) {
                     if(curAddr != hexList[i].address){
                         resp = loadAddress(hexList[i].address);
-                        if(resp != NULL && resp[1] == STATUS_CMD_OK) {
+                        if(!resp.isNull() && resp[1] == STATUS_CMD_OK) {
                             curAddr = hexList[i].address;
                         } else {
                             qStdOut() << "Failed to load program address at" << toHexString(hexList[i].address) << endl;
@@ -711,7 +718,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
                     }
 
                     resp = readData(pgmBlkSize);
-                    if(resp != NULL && resp[1] == STATUS_CMD_OK) {
+                    if(!resp.isNull() && resp[1] == STATUS_CMD_OK) {
                         if(hexList[i].data == resp.mid(2, pgmBlkSize)) {
 
                             unsigned int prtBlock = iBlock %10;
@@ -744,7 +751,7 @@ bool DigilentPgm::stk500v2Pgm(QVector<PgmBlock> hexList) {
                 qStdOut() << "\n" << "Verification time:" << verifyTime / 1000 << "s" << verifyTime % 1000 << "ms\n" << endl;
             }
             resp = leavePgm();
-            fPass &= (resp != NULL && resp[1] == STATUS_CMD_OK);
+            fPass &= (!resp.isNull() && resp[1] == STATUS_CMD_OK);
         }
     } else {
         //Sign on failed

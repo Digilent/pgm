@@ -18,7 +18,7 @@ public:
     bool checkInputParameters();
     void releaseDevice();
 
-    int progress;
+    static int progress;
 
 private:    
     bool programActivePort(QString hexPath);

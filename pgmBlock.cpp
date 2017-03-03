@@ -11,6 +11,6 @@ bool PgmBlock::operator ==(const PgmBlock &other){
 }
 
 //Less operator.  This function compares two PgmBlocks by their address properties.
-bool PgmBlock::operator <(const PgmBlock &other) {
+bool PgmBlock::operator <(const PgmBlock &other) const {
     return this->address < other.address;
 }
